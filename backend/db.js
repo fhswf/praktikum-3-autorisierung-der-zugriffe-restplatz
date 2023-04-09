@@ -1,7 +1,9 @@
 import { MongoClient } from 'mongodb';
-
+import { ObjectId } from 'mongodb';
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/todos';
 const MONGO_DB = process.env.MONGO_DB || 'todos';
+
+
 
 let db = null;
 let collection = null;
@@ -19,18 +21,31 @@ export default class DB {
     }
 
     queryById(id) {
-        // TODO: Implement queryById
+        return collection.findOne({_id:new ObjectId(id)});
     }
 
     update(id, order) {
-        // TODO: Implement update
+        const rslt= collection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: order }
+        );
+        return rslt;
     }
 
     delete(id) {
-        // TODO: Implement delete
+        return collection.deleteOne({_id: new ObjectId(id)});
     }
 
     insert(order) {
-        // TODO: Implement insert
+        const { title, due, status } = order;
+        const rslt = collection.insertOne(
+            {_id: new ObjectId(),
+            "due": due,
+            "title":title,
+            "status":status
+        }
+
+        );
+        return rslt;
     }
 }
