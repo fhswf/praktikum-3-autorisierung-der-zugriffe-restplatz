@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "express-session": "^1.17.3",
+    "passport-keycloak-bearer": "^2.3.0"
+  }
+}

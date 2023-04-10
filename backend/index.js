@@ -1,35 +1,80 @@
 import express from 'express';
 import passport from 'passport';
-import KeycloakBearerStrategy from 'passport-keycloak-bearer';
+import jwt from 'jsonwebtoken';
+import session from 'express-session';
+//import KeycloakBearerStrategy from 'passport-keycloak-bearer'
+import  KeycloakBearerStrategy  from 'passport-keycloak-bearer';
+import passportJWT from 'passport-jwt'
 import DB from './db.js'
 
 const PORT = process.env.PORT || 3000;
-passport.use(new KeycloakBearerStrategy({
-    realm: 'webentwicklung',
-    url: 'https://jupiter.fh-swf.de/keycloak',
-    clientId: 'my-client-id',
-    clientSecret: 'my-client-secret',
-    realmPublicKey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtTnTjWz9s7vA9lCBQGry/1WWc6uF7VbZC6UQ7M1H9Y0X7VzKoJ/Ypb0p+Fy+TNKj0pZ+n46x1xh4ex3jK/FXIHv5aR6FzDYENPymz+8KwZGsg+C46xup4J3qK5X5g5OUmRmxbhS5J5nmsiruV/EB39nwC2QV7lGWYAvX9y7KjJ/cFbVdweORgJ8fTDxECDIlAh0r1gGst7mq8H0EoVQjKikgCUu3Ilq8ehxqof/xVmTYCz6KjWQ8oOv00XO5l5+aKnyoWw/b90ZSZxE5MujZOzNak/CfykFEjF1N9d/uyfxSKvy/iNblw2a8WsBN/KeQ2tDRSjjzY3qKmLPv9frs4FwIDAQAB',
-    tokenUrl: 'https://jupiter.fh-swf.de/keycloak/realms/webentwicklung/protocol/openid-connect/token',
-    userInfoUrl: 'https://jupiter.fh-swf.de/keycloak/realms/webentwicklung/protocol/openid-connect/userinfo',
-    realmUrl: 'https://jupiter.fh-swf.de/keycloak/realms/webentwicklung'
-  }, (token, done) => {
-    // Hier können Sie die Validierung des Tokens durchführen, z.B. Überprüfung der Signatur
-    done(null, { sub: token.sub });
-  }));
+
+const publicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyn2vP592Ju/iKXQW1DCrSTXyQXyo11Qed1SdzFWC+mRtdgioKibzYMBt2MfAJa6YoyrVNgOtGvK659MjHALtotPQGmis1VVvBeMFdfh+zyFJi8NPqgBTXz6bQfnu85dbxVAg95J+1Ud0m4IUXME1ElOyp1pi88+w0C6ErVcFCyEDS3uAajBY6vBIuPrlokbl6RDcvR9zX85s+R/s7JeP1XV/e8gbnYgZwxcn/6+7moHPDl4LqvVDKnDq9n4W6561s8zzw8EoAwwYXUC3ZPe2/3DcUCh+zTF2nOy8HiN808CzqLq1VeD13q9DgkAmBWFNSaXb6vK6RIQ9+zr2cwdXiwIDAQAB';
+
+
+const JWTStrategy = passportJWT.Strategy;
+const ExtractJWT = passportJWT.ExtractJwt;
+
 
 
 /** Zentrales Objekt für unsere Express-Applikation */
 const app = express();
 app.use(express.json());
+
 /** global instance of our database */
 let db = new DB();
+
+
+  app.use(session({
+    secret: 'my-secret-key',
+    resave: false,
+    saveUninitialized: false
+  }));
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.use(new KeycloakBearerStrategy({
+    realm: 'webentwicklung',
+    url: 'https://jupiter.fh-swf.de/keycloak'
+    
+  }, (token, done) => {
+    try {
+      const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+      return done(null, decoded);
+
+    } catch (error) {
+      console.error(error);
+      return done(null, false);
+    }
+    
+  }));
+
+
+
+  const strategies = passport._strategies;
+
+  console.log(strategies);
+
+app.get('/protected', passport.authenticate('keycloak', { session: true }), (req, res) => {
+   
+    res.send('Hello from protected area!');
+});
+
+
+
+
+
+
 
 /** Initialize database connection */
 async function initDB() {
     await db.connect();
     console.log("Connected to database");
 }
+
+
+
+
 
 // implement API routes
 
@@ -64,14 +109,15 @@ app.delete('/todo/:id', async(req,res) =>{
     res.send(ret);
 })
 
+
 app.get('/', async (req, res) => {
     res.send("nix los");
 });
 
-app.post('/login', passport.authenticate('keycloak', {
-    successRedirect: '/a',
-    failureRedirect: '/b',
-  }));
+
+
+
+
 initDB()
     .then(() => {
         app.listen(PORT, () => {
