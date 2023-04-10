@@ -33,31 +33,26 @@ let db = new DB();
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(new KeycloakBearerStrategy({
-    realm: 'webentwicklung',
-    url: 'https://jupiter.fh-swf.de/keycloak'
-    
-  }, (token, done) => {
-    try {
+passport.use(new KeycloakBearerStrategy({
+   realm: 'webentwicklung',
+   url: 'https://jupiter.fh-swf.de/keycloak'
+}, (token, done) => {
+   try { 
+      console.log(token)
+
       const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
       return done(null, decoded);
-
     } catch (error) {
+      console.log("bla");
       console.error(error);
       return done(null, false);
     }
-    
-  }));
+}));
 
-
-
-  const strategies = passport._strategies;
-
-  console.log(strategies);
 
 app.get('/protected', passport.authenticate('keycloak', { session: true }), (req, res) => {
-   
-    res.send('Hello from protected area!');
+   console.log("qqq")
+   res.send('Hello from protected area!');
 });
 
 
