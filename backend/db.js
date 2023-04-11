@@ -7,12 +7,14 @@ const MONGO_DB = process.env.MONGO_DB || 'todos';
 
 let db = null;
 let collection = null;
+let collectionUser = null;
 export default class DB {
     connect() {
         return MongoClient.connect(MONGO_URI)
             .then(function (client) {
                 db = client.db(MONGO_DB);
                 collection = db.collection('todos');
+                collectionUser = db.collection('user');
             })
     }
 
@@ -22,6 +24,10 @@ export default class DB {
 
     queryById(id) {
         return collection.findOne({_id:new ObjectId(id)});
+    }
+
+    getUserByName(username){
+        return collectionUser.findOne({ name: username });
     }
 
     update(id, order) {
@@ -42,7 +48,8 @@ export default class DB {
             {_id: new ObjectId(),
             "due": due,
             "title":title,
-            "status":status
+            "status":status,
+            "user_id":userID
         }
 
         );
