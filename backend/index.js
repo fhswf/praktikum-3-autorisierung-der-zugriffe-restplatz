@@ -73,8 +73,15 @@ async function checkTDAccess(todoID,userID){
         return true;
     }
     return false;
-
 }
+
+async function checkAccessAndRun(req, res, action) {
+    if (!await checkTDAccess(req.params.id, req.user.id)) {
+      res.sendStatus(401);
+      return;
+    }
+    action(req, res);
+  }
 
 // implement API routes
 
@@ -89,24 +96,18 @@ app.get('/todos', authmw, async (req, res) => {
 /** Return todo by given id. 
  */
 app.get('/todos/:id', authmw ,async (req, res) => {
-    
-    if(! (await checkTDAccess(req.params.id,req.user.id))){
-        res.sendStatus(401);
-        return;
-    }
-    let todos = await db.queryById(req.params.id);
-    res.send(todos);
+    checkAccessAndRun(req, res, async (req, res) => {
+        let todos = await db.queryById(req.params.id);
+        res.send(todos);
+    });
 });
 
 
-
 app.put('/todo/:id' ,authmw, async(req,res) =>{
-    if(! (await checkTDAccess(req.params.id,req.user.id))){
-        res.sendStatus(401);
-        return;
-    }
-    let ret = await db.update(req.params.id, req.body);
-    res.send(ret);
+    checkAccessAndRun(req, res, async (req, res) => {
+       let ret = await db.update(req.params.id, req.body);
+       res.send(ret);
+    });
 });
 
 app.post('/todo', authmw, async(req,res) =>{ 
@@ -115,12 +116,10 @@ app.post('/todo', authmw, async(req,res) =>{
 });
 
 app.delete('/todo/:id', authmw,async(req,res) =>{
-    if(! (await checkTDAccess(req.params.id,req.user.id))){
-        res.sendStatus(401);
-        return;
-    }
-    let ret = await db.delete(req.params.id);
-    res.send(ret);
+    checkAccessAndRun(req, res, async (req, res) => {
+        let ret = await db.delete(req.params.id);
+        res.send(ret);
+    });     
 })
 
 
